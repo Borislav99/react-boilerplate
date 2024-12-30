@@ -1,0 +1,29 @@
+{
+  "extends": "./tsconfig.paths.json",
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "es2022",
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "module": "ESNext",
+    "outDir": "build",
+    "sourceMap": true,
+    "lib": ["DOM", "ESNext"],
+    "moduleResolution": "node",
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "forceConsistentCasingInFileNames": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true
+  },
+  "include": ["src/**/*", "types/**/*", "commitlint.config.ts", "e2e/**/*"],
+  "exclude": ["**/node_modules/**", "**/build/**", "**/*.json"]
+}

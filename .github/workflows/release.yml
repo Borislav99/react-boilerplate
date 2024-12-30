@@ -1,0 +1,90 @@
+name: Release To Production
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+
+      - name: Install dependencies
+        run: npm install
+
+  build:
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+
+      - name: Restore node_modules from cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: ./build
+
+  deploy-production:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: ./build
+
+      - name: Create Release
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './build'
+          production-branch: master
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: 'Create release from GitHub Actions'
+          enable-pull-request-comment: false
+          overwrites-pull-request-comment: false
+          production-deploy: true
+          enable-commit-comment: false
+          enable-commit-status: false
+          enable-github-deployment: false
+
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 1

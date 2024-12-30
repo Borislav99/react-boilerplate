@@ -1,0 +1,89 @@
+name: Create Testing Link
+
+on:
+  workflow_dispatch:
+    inputs:
+      pull_request_number:
+        description: 'Pull request number to run the workflow for'
+        required: true
+        default: ''
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: refs/pull/${{ github.event.inputs.pull_request_number }}/merge
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+
+      - name: Install dependencies
+        run: npm install
+
+  build:
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: refs/pull/${{ github.event.inputs.pull_request_number }}/merge
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+
+      - name: Restore node_modules from cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: ./build
+
+  create-testing-link:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: refs/pull/${{ github.event.inputs.pull_request_number }}/merge
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: ./build
+
+      - name: Create Netlify testing link
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './build'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: 'Testing link #${{ github.event.inputs.pull_request_number }}'
+          enable-pull-request-comment: true
+          overwrites-pull-request-comment: true
+          enable-commit-comment: false
+          enable-commit-status: false
+          enable-github-deployment: false
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
